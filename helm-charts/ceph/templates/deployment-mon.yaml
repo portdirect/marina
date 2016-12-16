@@ -1,0 +1,155 @@
+---
+kind: Deployment
+apiVersion: extensions/v1beta1
+metadata:
+  labels:
+    app: ceph
+    daemon: moncheck
+  name: ceph-mon-check
+spec:
+  replicas: 1
+  template:
+    metadata:
+      name: ceph-mon
+      labels:
+        app: ceph
+        daemon: moncheck
+    spec:
+      serviceAccount: default
+      volumes:
+        - name: ceph-conf
+          secret:
+            secretName: ceph-conf-combined
+        - name: ceph-bootstrap-osd-keyring
+          secret:
+            secretName: ceph-bootstrap-osd-keyring
+        - name: ceph-bootstrap-mds-keyring
+          secret:
+            secretName: ceph-bootstrap-mds-keyring
+        - name: ceph-bootstrap-rgw-keyring
+          secret:
+            secretName: ceph-bootstrap-rgw-keyring
+      containers:
+        - name: ceph-mon
+          image: {{ .Values.images.daemon }}
+          imagePullPolicy: Always
+          ports:
+            - containerPort: {{ .Values.network.port.mon }}
+          env:
+            - name: CEPH_DAEMON
+              value: MON_HEALTH
+            - name: KV_TYPE
+              value: k8s
+            - name: MON_IP_AUTO_DETECT
+              value: "1"
+            - name: CLUSTER
+              value: ceph
+          volumeMounts:
+            - name: ceph-conf
+              mountPath: /etc/ceph
+            - name: ceph-bootstrap-osd-keyring
+              mountPath: /var/lib/ceph/bootstrap-osd
+            - name: ceph-bootstrap-mds-keyring
+              mountPath: /var/lib/ceph/bootstrap-mds
+            - name: ceph-bootstrap-rgw-keyring
+              mountPath: /var/lib/ceph/bootstrap-rgw
+          resources:
+            requests:
+              memory: "5Mi"
+              cpu: "250m"
+            limits:
+              memory: "50Mi"
+              cpu: "500m"
+---
+kind: Deployment
+apiVersion: extensions/v1beta1
+metadata:
+  labels:
+    app: ceph
+    daemon: mon
+  name: ceph-mon
+spec:
+  replicas: 3
+  template:
+    metadata:
+      name: ceph-mon
+      labels:
+        app: ceph
+        daemon: mon
+      annotations:
+        scheduler.alpha.kubernetes.io/affinity: >
+          {
+            "podAntiAffinity": {
+              "RequiredDuringSchedulingIgnoredDuringExecution": [{
+                "labelSelector": {
+                  "matchExpressions": [{
+                    "key": "daemon",
+                    "operator": "In",
+                    "values":["mon"]
+                  }]
+                },
+              "topologyKey": "kubernetes.io/hostname"
+              }]
+            }
+          }
+    spec:
+      serviceAccount: default
+      volumes:
+        - name: ceph-conf
+          secret:
+            secretName: ceph-conf-combined
+        - name: ceph-bootstrap-osd-keyring
+          secret:
+            secretName: ceph-bootstrap-osd-keyring
+        - name: ceph-bootstrap-mds-keyring
+          secret:
+            secretName: ceph-bootstrap-mds-keyring
+        - name: ceph-bootstrap-rgw-keyring
+          secret:
+            secretName: ceph-bootstrap-rgw-keyring
+      containers:
+        - name: ceph-mon
+          image: {{ .Values.images.daemon }}
+          imagePullPolicy: Always
+          lifecycle:
+            preStop:
+                exec:
+                  # remove the mon on Pod stop.
+                  command:
+                    - "/remove-mon.sh"
+          ports:
+            - containerPort: {{ .Values.network.port.mon }}
+          env:
+            - name: CEPH_DAEMON
+              value: MON
+            - name: KV_TYPE
+              value: k8s
+            - name: NETWORK_AUTO_DETECT
+              value: "1"
+            - name: CLUSTER
+              value: ceph
+          volumeMounts:
+            - name: ceph-conf
+              mountPath: /etc/ceph
+            - name: ceph-bootstrap-osd-keyring
+              mountPath: /var/lib/ceph/bootstrap-osd
+            - name: ceph-bootstrap-mds-keyring
+              mountPath: /var/lib/ceph/bootstrap-mds
+            - name: ceph-bootstrap-rgw-keyring
+              mountPath: /var/lib/ceph/bootstrap-rgw
+          livenessProbe:
+              tcpSocket:
+                port: {{ .Values.network.port.mon }}
+              initialDelaySeconds: 60
+              timeoutSeconds: 5
+          readinessProbe:
+              tcpSocket:
+                port: {{ .Values.network.port.mon }}
+              timeoutSeconds: 5
+          resources:
+            requests:
+              memory: "50Mi"
+              cpu: "1000m"
+            limits:
+              memory: "100Mi"
+              cpu: "2000m"
