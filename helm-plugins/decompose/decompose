@@ -1,0 +1,7 @@
+#/bin/bash
+
+helm install --debug --dry-run marina/ceph | \
+  docker run \
+    -i \
+    --entrypoint /usr/bin/python \
+    gantry/decompose /opt/decompose/decompose.py

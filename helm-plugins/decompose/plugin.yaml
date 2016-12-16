@@ -1,0 +1,6 @@
+name: "decompose"
+version: "0.1.0"
+usage: "Decomposes a chart into rendered grains"
+description: |-
+  This plugin splits a chart up into rendered grains
+command: "$HELM_PLUGIN_DIR/decompose"
