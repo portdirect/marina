@@ -19,10 +19,10 @@ storage:
 storageclass:
   provision_storage_class: true
   name: general
-  monitors: ceph-mon.ceph:6789
+  monitors: ceph-mon.ceph
   pool: rbd
   admin_id: admin
   admin_secret_name: pvc-ceph-conf-combined-storageclass
-  admin_secret_namespace: nil
+  admin_secret_namespace: ceph
   user_id: admin
   user_secret_name: pvc-ceph-client-key

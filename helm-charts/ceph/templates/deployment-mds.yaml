@@ -6,19 +6,17 @@ metadata:
     app: ceph
     daemon: mds
   name: ceph-mds
-  namespace: ceph
 spec:
   replicas: 1
   template:
     metadata:
       name: ceph-mds
-      namespace: ceph
       labels:
         app: ceph
         daemon: mds
     spec:
       nodeSelector:
-        node-type: storage
+        {{ .Values.labels.node_selector_key }}: {{ .Values.labels.node_selector_value }}
       serviceAccount: default
       volumes:
         - name: ceph-conf
@@ -35,7 +33,8 @@ spec:
             secretName: ceph-bootstrap-rgw-keyring
       containers:
         - name: ceph-mon
-          image: ceph/daemon:latest
+          image: {{ .Values.images.daemon }}
+          imagePullPolicy: Always
           ports:
             - containerPort: 6800
           env:

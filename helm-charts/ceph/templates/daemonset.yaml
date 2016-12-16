@@ -3,7 +3,6 @@ kind: DaemonSet
 apiVersion: extensions/v1beta1
 metadata:
   name: ceph-osd
-  namespace: ceph
   labels:
     app: ceph
     daemon: osd
@@ -15,7 +14,7 @@ spec:
         daemon: osd
     spec:
       nodeSelector:
-        node-type: storage
+        {{ .Values.labels.node_selector_key }}: {{ .Values.labels.node_selector_value }}
       volumes:
         - name: devices
           hostPath:
@@ -23,7 +22,7 @@ spec:
         - name: ceph
           emptyDir: {}
 #          hostPath:
-#            path: /opt/ceph
+#            path: {{ .Values.storage.var_directory }}
         - name: ceph-conf
           secret:
             secretName: ceph-conf-combined
@@ -39,10 +38,10 @@ spec:
         - name: osd-directory
           emptyDir: {}
 #          hostPath:
-#            path: /home/core/data/ceph/osd
+#            path: {{ .Values.storage.osd_directory }}
       containers:
         - name: osd-pod
-          image: ceph/daemon:latest
+          image: {{ .Values.images.daemon }}
           imagePullPolicy: Always
           volumeMounts:
             - name: devices
