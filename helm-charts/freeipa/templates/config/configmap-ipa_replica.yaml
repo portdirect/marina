@@ -1,0 +1,20 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: freeipa-replica
+data:
+  ipa-replica-install-options: |
+    --allow-zone-overlap
+    --setup-dns
+    --forwarder={{ .Values.freeipa.dns.ext1 }}
+    --forwarder={{ .Values.freeipa.dns.ext2 }}
+    --no-ntp
+    --no-host-dns
+    --no_hbac_allow
+    --hostname={{ .Values.freeipa.master.hostname }}.freeipa.svc.{{ .Values.freeipa.domain }}
+    --domain=freeipa.svc.{{ .Values.freeipa.domain }}
+    --realm={{ .Values.freeipa.domain | upper }}
+    --unattended
+    --ds-password={{ .Values.freeipa.password.ds }}
+    --admin-password={{ .Values.freeipa.password.admin }}

@@ -1,0 +1,148 @@
+---
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: freeipa-replica
+spec:
+  serviceName: "freeipa"
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: freeipa
+        component: replica
+    spec:
+      terminationGracePeriodSeconds: 0
+      containers:
+        - name: docker-client
+          image: {{ .Values.images.docker.client }}
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+          command:
+            - sh
+            - -ec
+            - |
+                docker info;
+                tail -f /dev/null;
+                docker rm -f {{ .Values.freeipa.master.hostname }}.${POD_NAMESPACE}.svc.{{ .Values.freeipa.domain }} || true;
+                docker run \
+                  -t \
+                  --privileged \
+                  --name {{ .Values.freeipa.master.hostname }}.${POD_NAMESPACE}.svc.{{ .Values.freeipa.domain }} \
+                  -h {{ .Values.freeipa.master.hostname }}.${POD_NAMESPACE}.svc.{{ .Values.freeipa.domain }} \
+                  -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
+                  -v /mnt/data:/data:Z \
+                  -p 53:53/udp \
+                  -p 53:53/tcp \
+                  -p 80:80/tcp \
+                  -p 443:443/tcp \
+                  -p 389:389/tcp \
+                  -p 636:636/tcp \
+                  -p 88:88/tcp \
+                  -p 88:88/udp \
+                  -p 464:464/tcp \
+                  -p 464:464/udp \
+                  -p 123:123/udp \
+                  -p 7389:7389/tcp \
+                  -p 9443:9443/tcp \
+                  -p 9444:9444/tcp \
+                  -p 9445:9445/tcp \
+                  -e IPA_SERVER_IP=${POD_IP} \
+                  {{ .Values.images.server }} \
+                     ipa-replica-install
+          volumeMounts:
+            - name: pod-var-run
+              mountPath: /var/run
+              readOnly: false
+            - name: stateful-storage
+              mountPath: /mnt/data
+        - name: docker-daemon
+          image: {{ .Values.images.docker.daemon }}
+          args:
+            - --storage-driver=overlay
+          ports:
+            - containerPort: 53
+              name: dns-tcp
+              protocol: TCP
+            - containerPort: 53
+              name: dns-udp
+              protocol: UDP
+            - containerPort: 80
+              name: http
+              protocol: TCP
+            - containerPort: 443
+              name: https
+              protocol: TCP
+            - containerPort: 389
+              name: ldap
+              protocol: TCP
+            - containerPort: 636
+              name: ldaps
+              protocol: TCP
+            - containerPort: 88
+              name: kerberos-tcp
+              protocol: TCP
+            - containerPort: 88
+              name: kerberos-udp
+              protocol: UDP
+            - containerPort: 464
+              name: kerberospwd-tcp
+              protocol: TCP
+            - containerPort: 464
+              name: kerberospwd-udp
+              protocol: UDP
+            - containerPort: 123
+              name: ntp-udp
+              protocol: UDP
+            - containerPort: 7389
+              name: dogtag-ldap
+              protocol: TCP
+            - containerPort: 9443
+              name: dogtag-agent
+              protocol: TCP
+            - containerPort: 9444
+              name: dogtag-users
+              protocol: TCP
+            - containerPort: 9445
+              name: dogtag-admin
+              protocol: TCP
+          volumeMounts:
+            - name: pod-var-run
+              mountPath: /var/run
+              readOnly: false
+            - name: pod-var-lib-docker
+              mountPath: /var/lib/docker
+              readOnly: false
+            - name: stateful-storage
+              mountPath: /mnt/data
+              readOnly: false
+            - name: ipa-replica-install-options
+              mountPath: /mnt/data/ipa-replica-install-options
+              subPath: ipa-replica-install-options
+          securityContext:
+            privileged: true
+      volumes:
+        - name: pod-var-run
+          emptyDir: {}
+        - name: pod-var-lib-docker
+          emptyDir: {}
+        - name: stateful-storage
+          persistentVolumeClaim:
+            claimName: freeipa-replica
+        - name: ipa-replica-install-options
+          configMap:
+            name: freeipa-replica
+            items:
+            - key: ipa-replica-install-options
+              path: ipa-replica-install-options

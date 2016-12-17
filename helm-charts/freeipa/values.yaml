@@ -1,0 +1,16 @@
+images:
+  server: docker.io/freeipa/freeipa-server:centos-7-upstream
+  docker:
+    client: docker.io/docker:latest
+    daemon: docker.io/docker:dind
+
+freeipa:
+  password:
+    admin: Password123
+    ds: Password123
+  dns:
+    ext1: 8.8.8.8
+    ext2: 8.8.4.4
+  domain: cluster.local
+  master:
+    hostname: freeipa

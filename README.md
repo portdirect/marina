@@ -14,7 +14,7 @@ helm serve &
 helm repo add marina http://127.0.0.1:8879/charts
 
 make build-ceph
-make build-dkr-ceph
+make build-dkr-helm-ceph
 make install
 
 helm repo update
@@ -56,4 +56,13 @@ options ndots:5
 # is unavailable without an absolutely atrocious performance impact.
 options timeout:1
 options attempts:1
+```
+
+
+### DIND
+```
+kubectl create namespace freeipa
+helm install marina/freeipa --namespace freeipa
+
+
 ```
