@@ -3,17 +3,35 @@
 function kube_base64 () {
   cat /secrets/$1 | base64 | tr -d '\n'
 }
+
+function indent_cat () {
+  cat /secrets/$1 | sed 's/^/    /'
+}
+
 cat >> /dev/stdout <<EOF
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: "ceph-conf"
+data:
+  ceph.conf: |
+$( indent_cat ceph.conf )
+---
 apiVersion: v1
 kind: Secret
 metadata:
-  name: "ceph-conf-combined"
+  name: "ceph-client-admin-keyring"
 type: Opaque
 data:
-  ceph.conf: |
-    $( kube_base64 ceph.conf )
   ceph.client.admin.keyring: |
     $( kube_base64 ceph.client.admin.keyring )
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: "ceph-mon-keyring"
+type: Opaque
+data:
   ceph.mon.keyring: |
     $( kube_base64 ceph.mon.keyring )
 ---

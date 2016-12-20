@@ -20,13 +20,14 @@ helm repo update
 #Generate secrets and config for ceph deployment
 #                <ns> <storagecidr> <public cidr>
 helm ceph secret ceph 10.192.0.0/10 10.192.0.0/10
+#helm ceph secret ceph 192.168.0.0/16 192.168.0.0/16
 
 #Label the nodes that will take part in the Ceph cluster
 # 'all' labels all nodes in the cluster bar the k8s controller node(s)
 helm ceph labelnode all
 
 #Deploy ceph to the namespace setup above
-helm install marina/ceph --namespace ceph
+helm install marina/ceph --namespace ceph --debug --dry-run
 
 #Setup client credentials for a namespace
 helm ceph activate default

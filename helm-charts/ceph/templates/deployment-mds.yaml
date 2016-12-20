@@ -20,8 +20,14 @@ spec:
       serviceAccount: default
       volumes:
         - name: ceph-conf
+          configMap:
+            name: ceph-conf
+        - name: ceph-client-admin-keyring
           secret:
-            secretName: ceph-conf-combined
+            secretName: ceph-client-admin-keyring
+        - name: ceph-mon-keyring
+          secret:
+            secretName: ceph-mon-keyring
         - name: ceph-bootstrap-osd-keyring
           secret:
             secretName: ceph-bootstrap-osd-keyring
@@ -48,7 +54,14 @@ spec:
               value: ceph
           volumeMounts:
             - name: ceph-conf
-              mountPath: /etc/ceph
+              mountPath: /etc/ceph/ceph.conf
+              subPath: ceph.conf
+            - name: ceph-client-admin-keyring
+              mountPath: /etc/ceph/ceph.client.admin.keyring
+              subPath: ceph.client.admin.keyring
+            - name: ceph-mon-keyring
+              mountPath: /etc/ceph/ceph.mon.keyring
+              subPath: ceph.mon.keyring
             - name: ceph-bootstrap-osd-keyring
               mountPath: /var/lib/ceph/bootstrap-osd
             - name: ceph-bootstrap-mds-keyring
@@ -66,8 +79,8 @@ spec:
               timeoutSeconds: 5
           resources:
             requests:
-              memory: "10Mi"
-              cpu: "250m"
+              memory: {{ .Values.resources.mds.requests.memory | quote }}
+              cpu: {{ .Values.resources.mds.requests.cpu | quote }}
             limits:
-              memory: "50Mi"
-              cpu: "500m"
+              memory: {{ .Values.resources.mds.limits.memory | quote }}
+              cpu: {{ .Values.resources.mds.limits.cpu | quote }}

@@ -16,19 +16,6 @@ spec:
         daemon: moncheck
     spec:
       serviceAccount: default
-      volumes:
-        - name: ceph-conf
-          secret:
-            secretName: ceph-conf-combined
-        - name: ceph-bootstrap-osd-keyring
-          secret:
-            secretName: ceph-bootstrap-osd-keyring
-        - name: ceph-bootstrap-mds-keyring
-          secret:
-            secretName: ceph-bootstrap-mds-keyring
-        - name: ceph-bootstrap-rgw-keyring
-          secret:
-            secretName: ceph-bootstrap-rgw-keyring
       containers:
         - name: ceph-mon
           image: {{ .Values.images.daemon }}
@@ -46,7 +33,14 @@ spec:
               value: ceph
           volumeMounts:
             - name: ceph-conf
-              mountPath: /etc/ceph
+              mountPath: /etc/ceph/ceph.conf
+              subPath: ceph.conf
+            - name: ceph-client-admin-keyring
+              mountPath: /etc/ceph/ceph.client.admin.keyring
+              subPath: ceph.client.admin.keyring
+            - name: ceph-mon-keyring
+              mountPath: /etc/ceph/ceph.mon.keyring
+              subPath: ceph.mon.keyring
             - name: ceph-bootstrap-osd-keyring
               mountPath: /var/lib/ceph/bootstrap-osd
             - name: ceph-bootstrap-mds-keyring
@@ -55,11 +49,30 @@ spec:
               mountPath: /var/lib/ceph/bootstrap-rgw
           resources:
             requests:
-              memory: "5Mi"
-              cpu: "250m"
+              memory: {{ .Values.resources.mon_check.requests.memory | quote }}
+              cpu: {{ .Values.resources.mon_check.requests.cpu | quote }}
             limits:
-              memory: "50Mi"
-              cpu: "500m"
+              memory: {{ .Values.resources.mon_check.limits.memory | quote }}
+              cpu: {{ .Values.resources.mon_check.limits.cpu | quote }}
+      volumes:
+        - name: ceph-conf
+          configMap:
+            name: ceph-conf
+        - name: ceph-client-admin-keyring
+          secret:
+            secretName: ceph-client-admin-keyring
+        - name: ceph-mon-keyring
+          secret:
+            secretName: ceph-mon-keyring
+        - name: ceph-bootstrap-osd-keyring
+          secret:
+            secretName: ceph-bootstrap-osd-keyring
+        - name: ceph-bootstrap-mds-keyring
+          secret:
+            secretName: ceph-bootstrap-mds-keyring
+        - name: ceph-bootstrap-rgw-keyring
+          secret:
+            secretName: ceph-bootstrap-rgw-keyring
 ---
 kind: Deployment
 apiVersion: extensions/v1beta1
@@ -94,19 +107,6 @@ spec:
           }
     spec:
       serviceAccount: default
-      volumes:
-        - name: ceph-conf
-          secret:
-            secretName: ceph-conf-combined
-        - name: ceph-bootstrap-osd-keyring
-          secret:
-            secretName: ceph-bootstrap-osd-keyring
-        - name: ceph-bootstrap-mds-keyring
-          secret:
-            secretName: ceph-bootstrap-mds-keyring
-        - name: ceph-bootstrap-rgw-keyring
-          secret:
-            secretName: ceph-bootstrap-rgw-keyring
       containers:
         - name: ceph-mon
           image: {{ .Values.images.daemon }}
@@ -130,7 +130,14 @@ spec:
               value: ceph
           volumeMounts:
             - name: ceph-conf
-              mountPath: /etc/ceph
+              mountPath: /etc/ceph/ceph.conf
+              subPath: ceph.conf
+            - name: ceph-client-admin-keyring
+              mountPath: /etc/ceph/ceph.client.admin.keyring
+              subPath: ceph.client.admin.keyring
+            - name: ceph-mon-keyring
+              mountPath: /etc/ceph/ceph.mon.keyring
+              subPath: ceph.mon.keyring
             - name: ceph-bootstrap-osd-keyring
               mountPath: /var/lib/ceph/bootstrap-osd
             - name: ceph-bootstrap-mds-keyring
@@ -148,8 +155,27 @@ spec:
               timeoutSeconds: 5
           resources:
             requests:
-              memory: "50Mi"
-              cpu: "1000m"
+              memory: {{ .Values.resources.mon.requests.memory | quote }}
+              cpu: {{ .Values.resources.mon.requests.cpu | quote }}
             limits:
-              memory: "100Mi"
-              cpu: "2000m"
+              memory: {{ .Values.resources.mon.limits.memory | quote }}
+              cpu: {{ .Values.resources.mon.limits.cpu | quote }}
+      volumes:
+        - name: ceph-conf
+          configMap:
+            name: ceph-conf
+        - name: ceph-client-admin-keyring
+          secret:
+            secretName: ceph-client-admin-keyring
+        - name: ceph-mon-keyring
+          secret:
+            secretName: ceph-mon-keyring
+        - name: ceph-bootstrap-osd-keyring
+          secret:
+            secretName: ceph-bootstrap-osd-keyring
+        - name: ceph-bootstrap-mds-keyring
+          secret:
+            secretName: ceph-bootstrap-mds-keyring
+        - name: ceph-bootstrap-rgw-keyring
+          secret:
+            secretName: ceph-bootstrap-rgw-keyring
